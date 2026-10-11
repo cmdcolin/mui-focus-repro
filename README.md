@@ -8,17 +8,17 @@ Live page: https://cmdcolin.github.io/mui-focus-repro/
   a page embedding the Menu in an iframe jumps up to the iframe's top whenever
   that top is scrolled out of view. Chrome skips that scroll for an element
   inside a `position: fixed` container and never jumps.
-- **Repro:** open the live page in Firefox and press **Run test**. The panel
-  reports where MUI focused the row, whether the menu had a position yet, and
-  how far the page moved. **With the workaround** runs the same test with
-  [JBrowse's fix](https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts).
+- **Repro:** open the live page in Firefox and press **Run the test** in step
+  1. A result box reports where MUI focused the row, whether the menu had a
+  position yet, and how far the page moved. **With the workaround** runs the
+  same test with [JBrowse's fix](https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts).
 
 `index.html` is the embedding page and `frame.html` the iframe, with React 19.2
 and `@mui/material` 9.5.0 loaded from esm.sh. Nothing is built.
 
 ## Measured
 
-Run test, iframe top 300 px above the window:
+Run the test, iframe top 300 px above the window:
 
 | Browser       | Mode           | Row focused at | Menu positioned | Page    |
 | ------------- | -------------- | -------------- | --------------- | ------- |

@@ -78,21 +78,26 @@
     box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
     font-size: 14px;
   }
-  #panel button {
+  #panel h2 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .run {
     font: inherit;
-    padding: 6px 14px;
+    font-weight: 600;
+    padding: 8px 18px;
     border-radius: 6px;
     border: 1px solid var(--accent);
     background: var(--accent);
     color: #fff;
     cursor: pointer;
   }
-  #panel button:disabled {
+  .run:disabled {
     opacity: 0.5;
     cursor: default;
   }
   #log {
-    margin: 10px 0 0;
+    margin: 6px 0 8px;
     padding: 0;
     list-style: none;
   }
@@ -122,25 +127,36 @@
   <main>
     <h1>MUI Menu in an iframe scrolls the page around it</h1>
     <p id="browser-note" class="note" hidden>
-      This browser is not Firefox, so the page will not jump here. The panel
-      still shows MUI focusing the row before the menu has a position.
+      This browser is not Firefox, so the page will not jump here. The result
+      box still shows MUI focusing the row before the menu has a position.
     </p>
     <p>
       <code>@mui/material</code> 9.5.0 focuses a Menu's first row before
       Popover moves the menu beside its button. Firefox scrolls the page around
       an iframe to show a focused element, so this page jumps.
     </p>
-    <h2>To reproduce, in Firefox</h2>
+    <p class="modes">
+      Mode:
+      <a id="mode-default" href="./">MUI default</a> ·
+      <a id="mode-workaround" href="./?workaround">With the workaround</a>
+      (<a
+        href="https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts"
+        >JBrowse's version</a
+      >) · <a href="https://github.com/cmdcolin/mui-focus-repro">Source</a>
+    </p>
+    <h2 id="steps">To reproduce, in Firefox</h2>
     <ol>
       <li>
-        Click <strong>Run test</strong> at the bottom right. It scrolls the
-        yellow bar at the top of the dashed iframe off the top of the window, then
-        opens the menu.
+        <p>
+          Press this button. It scrolls the yellow bar at the top of the dashed
+          iframe off the top of the window, then opens the menu in the iframe.
+        </p>
+        <p><button id="run" class="run" disabled>Run the test</button></p>
       </li>
       <li>
-        The page snaps back up until the yellow bar is on screen, and the panel
-        says how far the page jumped. The menu you opened is now below the
-        window.
+        The page snaps back up until the yellow bar is on screen, and a result
+        box at the bottom right says how far the page jumped. The menu you
+        opened is now below the window.
       </li>
       <li>
         Switch to <a href="./?workaround">With the workaround</a> and run it
@@ -152,25 +168,14 @@
       the window and the blue <strong>Open menu</strong> button is visible, then
       click it.
     </p>
-    <p class="modes">
-      Mode:
-      <a id="mode-default" href="./">MUI default</a> ·
-      <a id="mode-workaround" href="./?workaround">With the workaround</a>
-      (<a
-        href="https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts"
-        >JBrowse's version</a
-      >) · <a href="https://github.com/cmdcolin/mui-focus-repro">Source</a>
-    </p>
   </main>
   <iframe id="frame" title="MUI Menu demo"></iframe>
   <div class="tail"></div>
 
-  <aside id="panel" aria-live="polite">
-    <div>
-      <button id="run" disabled>Run test</button>
-      <span class="muted" id="mode-label"></span>
-    </div>
+  <aside id="panel" aria-live="polite" hidden>
+    <h2>Result: <span id="mode-label"></span></h2>
     <ul id="log"></ul>
+    <a href="#steps">Back to the steps</a>
   </aside>
 
   <script>
@@ -192,6 +197,7 @@
     )
 
     function addLine(html) {
+      document.getElementById('panel').hidden = false
       const li = document.createElement('li')
       li.innerHTML = html
       log.prepend(li)
