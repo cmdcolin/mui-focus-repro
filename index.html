@@ -53,11 +53,12 @@
   }
   iframe {
     display: block;
-    width: 100%;
+    box-sizing: border-box;
+    width: min(760px, calc(100% - 32px));
     height: 900px;
-    border: 0;
-    border-top: 3px dashed var(--muted);
-    border-bottom: 3px dashed var(--muted);
+    margin: 0 auto;
+    border: 3px dashed var(--muted);
+    border-radius: 8px;
   }
   .tail {
     height: 2000px;
@@ -107,6 +108,12 @@
     color: var(--good);
     font-weight: 600;
   }
+  .note {
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #fff8c5;
+    color: #3b2300;
+  }
   .muted {
     color: var(--muted);
   }
@@ -114,23 +121,37 @@
 <body>
   <main>
     <h1>MUI Menu in an iframe scrolls the page around it</h1>
-    <ul>
+    <p id="browser-note" class="note" hidden>
+      This browser is not Firefox, so the page will not jump here. The panel
+      still shows MUI focusing the row before the menu has a position.
+    </p>
+    <p>
+      <code>@mui/material</code> 9.5.0 focuses a Menu's first row before
+      Popover moves the menu beside its button. Firefox scrolls the page around
+      an iframe to show a focused element, so this page jumps.
+    </p>
+    <h2>To reproduce, in Firefox</h2>
+    <ol>
       <li>
-        <strong>Bug:</strong> <code>@mui/material</code> 9.5.0 focuses a
-        Menu's first row before Popover positions the menu, while the row
-        still sits at the iframe's top-left.
+        Click <strong>Run test</strong> at the bottom right. It scrolls the
+        yellow bar at the top of the dashed iframe off the top of the window, then
+        opens the menu.
       </li>
       <li>
-        <strong>Effect:</strong> Firefox scrolls every enclosing page to show a
-        focused element, so this page jumps up to the iframe's top whenever
-        that top is scrolled out of view.
+        The page snaps back up until the yellow bar is on screen, and the panel
+        says how far the page jumped. The menu you opened is now below the
+        window.
       </li>
       <li>
-        <strong>Chrome</strong> does not scroll for an element inside a
-        <code>position: fixed</code> container, so it never jumps. The panel's
-        focus log still shows the row focused before the menu has a position.
+        Switch to <a href="./?workaround">With the workaround</a> and run it
+        again: the page stays put and the menu opens beside its button.
       </li>
-    </ul>
+    </ol>
+    <p>
+      By hand: scroll down until the yellow bar has just gone off the top of
+      the window and the blue <strong>Open menu</strong> button is visible, then
+      click it.
+    </p>
     <p class="modes">
       Mode:
       <a id="mode-default" href="./">MUI default</a> ·
@@ -139,11 +160,6 @@
         href="https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts"
         >JBrowse's version</a
       >) · <a href="https://github.com/cmdcolin/mui-focus-repro">Source</a>
-    </p>
-    <p>
-      Press <strong>Run test</strong> in the panel, or scroll down until the
-      dashed top edge of the iframe is above the window and click
-      <strong>Open menu</strong> yourself.
     </p>
   </main>
   <iframe id="frame" title="MUI Menu demo"></iframe>
@@ -171,6 +187,9 @@
       ? 'with the workaround'
       : 'MUI default'
     frame.src = workaround ? 'frame.html?workaround' : 'frame.html'
+    document.getElementById('browser-note').hidden = /Firefox\//.test(
+      navigator.userAgent,
+    )
 
     function addLine(html) {
       const li = document.createElement('li')
@@ -184,7 +203,7 @@
         addLine(
           after === before
             ? `<span class="good">The page stayed at scrollY ${before}.</span>`
-            : `<span class="bad">The page jumped ${Math.abs(after - before)} px ${after < before ? 'up' : 'down'}</span> (scrollY ${before} → ${after}).`,
+            : `<span class="bad">The page jumped ${Math.abs(after - before)} px ${after < before ? 'up' : 'down'}</span> (scrollY ${before} → ${after}). Firefox scrolled to where MUI focused the row, and the menu you opened is now below the window.`,
         )
       }, 700)
     }
