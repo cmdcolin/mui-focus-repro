@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<title>MUI Menu inside the iframe</title>
+<body style="margin: 0; font-family: system-ui, sans-serif; background: #fff">
+  <p style="margin: 0; padding: 12px 16px; background: #fde68a">
+    Top of the iframe. MUI focuses the menu's first row here, before Popover
+    positions the menu.
+  </p>
+  <div id="root" style="padding: 460px 40px 0"></div>
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.2.0",
+        "react/": "https://esm.sh/react@19.2.0/",
+        "react-dom": "https://esm.sh/react-dom@19.2.0",
+        "react-dom/": "https://esm.sh/react-dom@19.2.0/",
+        "@mui/material": "https://esm.sh/@mui/material@9.5.0?external=react,react-dom"
+      }
+    }
+  </script>
+  <script type="module">
+    import { createElement as h, useRef, useState } from 'react'
+    import { createRoot } from 'react-dom/client'
+    import { Button, Menu, MenuItem } from '@mui/material'
+
+    const workaround = new URLSearchParams(location.search).has('workaround')
+    const report = message => parent.postMessage(message, '*')
+
+    const focus = HTMLElement.prototype.focus
+    HTMLElement.prototype.focus = function (options) {
+      if (this.getAttribute('role') === 'menuitem') {
+        const { top, left } = this.getBoundingClientRect()
+        report({
+          type: 'focus',
+          label: this.textContent,
+          top: Math.round(top),
+          left: Math.round(left),
+          positioned: this.closest('.MuiPaper-root')?.style.top !== '',
+          preventScroll: options?.preventScroll === true,
+        })
+      }
+      return focus.call(this, options)
+    }
+
+    function workaroundProps(action) {
+      return {
+        action,
+        autoFocus: false,
+        disableAutoFocus: true,
+        slotProps: {
+          transition: {
+            onEntering: paper => {
+              action.current?.updatePosition()
+              paper
+                .querySelector('[role^="menuitem"]:not(.Mui-disabled)')
+                ?.focus({ preventScroll: true })
+            },
+          },
+        },
+      }
+    }
+
+    function Demo() {
+      const [anchorEl, setAnchorEl] = useState(null)
+      const action = useRef(null)
+      const button = useRef(null)
+      window.demo = {
+        open: () => setAnchorEl(button.current),
+        close: () => setAnchorEl(null),
+      }
+      return h(
+        'div',
+        null,
+        h(
+          Button,
+          {
+            ref: button,
+            variant: 'contained',
+            id: 'open',
+            onPointerDown: () => report({ type: 'press' }),
+            onClick: e => setAnchorEl(e.currentTarget),
+          },
+          'Open menu',
+        ),
+        h(
+          Menu,
+          {
+            ...(workaround ? workaroundProps(action) : {}),
+            anchorEl,
+            open: !!anchorEl,
+            onClose: () => setAnchorEl(null),
+          },
+          ['First', 'Second', 'Third'].map(label =>
+            h(MenuItem, { key: label, onClick: () => setAnchorEl(null) }, label),
+          ),
+        ),
+      )
+    }
+
+    addEventListener('message', e => {
+      if (e.data === 'open') {
+        window.demo.open()
+      } else if (e.data === 'close') {
+        window.demo.close()
+      }
+    })
+    createRoot(document.getElementById('root')).render(h(Demo))
+    report({ type: 'ready' })
+  </script>
+</body>
+</html>

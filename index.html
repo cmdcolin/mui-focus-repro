@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MUI Menu Iframe Scroll</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #59636e;
+    --panel: #f6f8fa;
+    --border: #d1d9e0;
+    --bad: #cf222e;
+    --good: #1a7f37;
+    --accent: #0969da;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #9198a1;
+      --panel: #151b23;
+      --border: #3d444d;
+      --bad: #ff7b72;
+      --good: #3fb950;
+      --accent: #4493f8;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font:
+      16px/1.5 system-ui,
+      sans-serif;
+  }
+  main {
+    max-width: 760px;
+    padding: 24px 16px 0;
+    margin: 0 auto;
+    min-height: 800px;
+  }
+  a {
+    color: var(--accent);
+  }
+  code {
+    font-size: 0.9em;
+  }
+  .modes a[aria-current='page'] {
+    font-weight: 700;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  iframe {
+    display: block;
+    width: 100%;
+    height: 900px;
+    border: 0;
+    border-top: 3px dashed var(--muted);
+    border-bottom: 3px dashed var(--muted);
+  }
+  .tail {
+    height: 2000px;
+  }
+  #panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: min(440px, calc(100vw - 32px));
+    max-height: 60vh;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+    font-size: 14px;
+  }
+  #panel button {
+    font: inherit;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  #panel button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  #log {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  #log li {
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+  .bad {
+    color: var(--bad);
+    font-weight: 600;
+  }
+  .good {
+    color: var(--good);
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--muted);
+  }
+</style>
+<body>
+  <main>
+    <h1>MUI Menu in an iframe scrolls the page around it</h1>
+    <ul>
+      <li>
+        <strong>Bug:</strong> <code>@mui/material</code> 9.5.0 focuses a
+        Menu's first row before Popover positions the menu, while the row
+        still sits at the iframe's top-left.
+      </li>
+      <li>
+        <strong>Effect:</strong> Firefox scrolls every enclosing page to show a
+        focused element, so this page jumps up to the iframe's top whenever
+        that top is scrolled out of view.
+      </li>
+      <li>
+        <strong>Chrome</strong> does not scroll for an element inside a
+        <code>position: fixed</code> container, so it never jumps. The panel's
+        focus log still shows the row focused before the menu has a position.
+      </li>
+    </ul>
+    <p class="modes">
+      Mode:
+      <a id="mode-default" href="./">MUI default</a> ·
+      <a id="mode-workaround" href="./?workaround">With the workaround</a>
+      (<a
+        href="https://github.com/GMOD/jbrowse-components/blob/main/packages/core/src/ui/usePlacedMenuFocus.ts"
+        >JBrowse's version</a
+      >) · <a href="https://github.com/cmdcolin/mui-focus-repro">Source</a>
+    </p>
+    <p>
+      Press <strong>Run test</strong> in the panel, or scroll down until the
+      dashed top edge of the iframe is above the window and click
+      <strong>Open menu</strong> yourself.
+    </p>
+  </main>
+  <iframe id="frame" title="MUI Menu demo"></iframe>
+  <div class="tail"></div>
+
+  <aside id="panel" aria-live="polite">
+    <div>
+      <button id="run" disabled>Run test</button>
+      <span class="muted" id="mode-label"></span>
+    </div>
+    <ul id="log"></ul>
+  </aside>
+
+  <script>
+    const workaround = new URLSearchParams(location.search).has('workaround')
+    const frame = document.getElementById('frame')
+    const run = document.getElementById('run')
+    const log = document.getElementById('log')
+    const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+    document
+      .getElementById(workaround ? 'mode-workaround' : 'mode-default')
+      .setAttribute('aria-current', 'page')
+    document.getElementById('mode-label').textContent = workaround
+      ? 'with the workaround'
+      : 'MUI default'
+    frame.src = workaround ? 'frame.html?workaround' : 'frame.html'
+
+    function addLine(html) {
+      const li = document.createElement('li')
+      li.innerHTML = html
+      log.prepend(li)
+    }
+
+    function measure(before = Math.round(scrollY)) {
+      setTimeout(() => {
+        const after = Math.round(scrollY)
+        addLine(
+          after === before
+            ? `<span class="good">The page stayed at scrollY ${before}.</span>`
+            : `<span class="bad">The page jumped ${Math.abs(after - before)} px ${after < before ? 'up' : 'down'}</span> (scrollY ${before} → ${after}).`,
+        )
+      }, 700)
+    }
+
+    addEventListener('message', e => {
+      if (e.source !== frame.contentWindow) {
+        return
+      }
+      const m = e.data
+      if (m.type === 'ready') {
+        run.disabled = false
+      } else if (m.type === 'press') {
+        measure()
+      } else if (m.type === 'focus') {
+        addLine(
+          `Focused "${m.label}" at x=${m.left}, y=${m.top} in the iframe. ` +
+            `Menu positioned: <span class="${m.positioned ? 'good' : 'bad'}">${m.positioned ? 'yes' : 'no'}</span>. ` +
+            `preventScroll: ${m.preventScroll ? 'yes' : 'no'}.`,
+        )
+      }
+    })
+
+    run.addEventListener('click', async () => {
+      run.disabled = true
+      frame.contentWindow.postMessage('close', '*')
+      await sleep(400)
+      const iframeTop = frame.getBoundingClientRect().top + scrollY
+      scrollTo(0, Math.round(iframeTop + 300))
+      addLine(
+        `<span class="muted">Scrolled so the iframe's top is 300 px above the window, then opened the menu.</span>`,
+      )
+      await sleep(300)
+      const before = Math.round(scrollY)
+      frame.contentWindow.postMessage('open', '*')
+      measure(before)
+      await sleep(900)
+      run.disabled = false
+    })
+  </script>
+</body>
+</html>
